@@ -121,7 +121,11 @@ export function rangeModes(
 
   // ---- 查询按 Hilbert 顺序排列；answer 数组保持原顺序 ----
   const power = Math.max(1, Math.ceil(Math.log2(Math.max(n, 1))));
-  const order = new Uint32Array(q);
+  // Hilbert 序号最大可达 4^power - 1：n 上限 200000 时 power=18、序号可达
+  // 2^36-1，超出 32 位无符号整数范围。必须用 Float64Array 存放（此范围内的
+  // 整数均可被 IEEE-754 双精度精确表示）；若截断到 32 位，排序键的空间局部性
+  // 会被彻底打乱，莫队指针将在相距很远的区间间频繁跳转。
+  const order = new Float64Array(q);
   for (let i = 0; i < q; i++) {
     order[i] = hilbertOrder(queries[i].left, queries[i].right, power);
   }

@@ -38,6 +38,12 @@ export function VirtualTable({ answers, queries }: VirtualTableProps) {
     Math.ceil((scrollTop + viewportHeight) / ROW_HEIGHT) + OVERSCAN,
   );
 
+  // 虚拟列表必须把未渲染行的高度撑开：上下各放一个 aria-hidden 占位行，
+  // 使滚动内容总高度等于全部行的高度。否则 scrollHeight 只覆盖已渲染的
+  // 数十行，"滚动到末行"（scrollTop = scrollHeight）永远到不了第 20 万行。
+  const topPad = startIndex * ROW_HEIGHT;
+  const bottomPad = (total - endIndex) * ROW_HEIGHT;
+
   const rows: JSX.Element[] = [];
   for (let i = startIndex; i < endIndex; i++) {
     const a = answers[i];
@@ -76,7 +82,17 @@ export function VirtualTable({ answers, queries }: VirtualTableProps) {
           </tr>
         </thead>
         <tbody>
+          {topPad > 0 && (
+            <tr aria-hidden="true" style={{ height: topPad }}>
+              <td colSpan={4} style={{ padding: 0, border: 'none' }} />
+            </tr>
+          )}
           {rows}
+          {bottomPad > 0 && (
+            <tr aria-hidden="true" style={{ height: bottomPad }}>
+              <td colSpan={4} style={{ padding: 0, border: 'none' }} />
+            </tr>
+          )}
         </tbody>
       </table>
     </div>

@@ -62,6 +62,13 @@ export default function App() {
 
     setRunning(true);
 
+    // values 的 ArrayBuffer 会随 postMessage 转移给 Worker，主线程侧的
+    // Int32Array 随即被 neuter（length 变为 0）；规模必须在转移之前记下，
+    // 否则状态栏会把读数数量错误显示为 0。
+    const valueCount = parsed.values.length;
+    const queryCount = parsed.queries.length;
+    const parsedQueries = parsed.queries;
+
     const worker =
       workerRef.current ??
       new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
@@ -70,10 +77,10 @@ export default function App() {
     worker.onmessage = (ev: MessageEvent<{ answers: ModeResult[]; elapsedMs: number }>) => {
       // 按查询原顺序返回（Worker 内部已还原顺序）。
       setAnswers(ev.data.answers);
-      setQueries(parsed.queries);
+      setQueries(parsedQueries);
       setSummary({
-        n: parsed.values.length,
-        q: parsed.queries.length,
+        n: valueCount,
+        q: queryCount,
         elapsedMs: ev.data.elapsedMs,
       });
       setRunning(false);
