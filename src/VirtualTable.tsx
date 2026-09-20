@@ -38,7 +38,23 @@ export function VirtualTable({ answers, queries }: VirtualTableProps) {
     Math.ceil((scrollTop + viewportHeight) / ROW_HEIGHT) + OVERSCAN,
   );
 
+  // 可视区之外的行不渲染，但必须用占位行撑起整张表的总高度
+  // （total * ROW_HEIGHT）：否则滚动容器的 scrollHeight 只等于实际渲染的
+  // 数十行高度，既没有长滚动条，“滚动到末行”也永远无法抵达第 total 行。
+  const topPad = startIndex * ROW_HEIGHT;
+  const bottomPad = (total - endIndex) * ROW_HEIGHT;
+
+  const spacerRow = (height: number, key: string) => (
+    <tr key={key} aria-hidden="true" style={{ height, padding: 0 }}>
+      <td
+        colSpan={4}
+        style={{ height, padding: 0, borderBottom: 'none' }}
+      />
+    </tr>
+  );
+
   const rows: JSX.Element[] = [];
+  if (topPad > 0) rows.push(spacerRow(topPad, 'top-spacer'));
   for (let i = startIndex; i < endIndex; i++) {
     const a = answers[i];
     const q = queries[i];
@@ -63,6 +79,7 @@ export function VirtualTable({ answers, queries }: VirtualTableProps) {
       </tr>,
     );
   }
+  if (bottomPad > 0) rows.push(spacerRow(bottomPad, 'bottom-spacer'));
 
   return (
     <div className="table-scroll" ref={scrollRef} onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}>

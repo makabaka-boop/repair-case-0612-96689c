@@ -19,7 +19,13 @@ export interface ModeResult {
   count: number;
 }
 
-/** Hilbert 曲线序号（power >= 1，序号范围 [0, 2^(2power))）。 */
+/**
+ * Hilbert 曲线序号（power >= 1，序号范围 [0, 2^(2power))）。
+ *
+ * 注意序号必须用双精度浮点保存：n 最大 200000 时 power=18，序号最大可达
+ * 2^36 - 1，远超 32 位无符号整数范围（2^32 - 1）。中间累加量 s*s 最大为
+ * 2^34，也在 Number.MAX_SAFE_INTEGER（2^53）之内，故用普通 number 精确。
+ */
 function hilbertOrder(x: number, y: number, power: number): number {
   let order = 0;
   let rx = 0;
@@ -121,7 +127,10 @@ export function rangeModes(
 
   // ---- 查询按 Hilbert 顺序排列；answer 数组保持原顺序 ----
   const power = Math.max(1, Math.ceil(Math.log2(Math.max(n, 1))));
-  const order = new Uint32Array(q);
+  // 必须用 Float64Array：power=18 时序号可达 2^36 量级，Uint32Array 会按
+  // 2^32 截断高位，使相距很远的区间得到相同/乱序的序号，莫队指针在网格
+  // 远端之间频繁整段跳转（退化成近乎 O(n·q)），最大批次迟迟无法完成。
+  const order = new Float64Array(q);
   for (let i = 0; i < q; i++) {
     order[i] = hilbertOrder(queries[i].left, queries[i].right, power);
   }

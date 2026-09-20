@@ -62,6 +62,11 @@ export default function App() {
 
     setRunning(true);
 
+    // values 的 ArrayBuffer 会随 postMessage 转移（transferable），转移后
+    // parsed.values 立刻变为分离状态（length 归零），长度必须在此之前捕获，
+    // 否则状态栏会把读数数量错误地汇总为 0。
+    const n = parsed.values.length;
+    const q = parsed.queries.length;
     const worker =
       workerRef.current ??
       new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
@@ -72,8 +77,8 @@ export default function App() {
       setAnswers(ev.data.answers);
       setQueries(parsed.queries);
       setSummary({
-        n: parsed.values.length,
-        q: parsed.queries.length,
+        n,
+        q,
         elapsedMs: ev.data.elapsedMs,
       });
       setRunning(false);
